@@ -38,7 +38,7 @@ export async function authenticationUser(req, res, next) {
                 return sendResponse(res, 403, null, true, "User Not Found")
             }
             req.user = decoded
-            if (decoded.role == "beneficiary") {
+            if (decoded.role == "user") {
                 next()
             } else {
                 return sendResponse(res, 403, null, true, "beneficiary Only allewd to access")
@@ -72,47 +72,4 @@ export async function authenticationAdmin(req, res, next) {
     }
 }
 
-
-export async function authenticationReceptionist(req, res, next) {
-    try {
-        console.log("req.headersee==>", req.headers.authorization)
-        const bearerToken = req?.headers?.authorization
-        console.log("TOKEN MISSONG==>", req?.headers?.authorization)
-        if (!bearerToken) return sendResponse(res, 403, null, true, "Token not Provide")
-        const token = bearerToken?.split(" ")[1]
-        console.log("4HI BERAER TOKEN==>", bearerToken)
-        const decoded = jwt.verify(token, process.env.AUTH_SECRET)
-        req.user = decoded
-        console.log("hidecodde==>", decoded)
-        if (decoded.role == "receptionist") {
-            next()
-        } else {
-            return sendResponse(res, 403, null, true, "Receptionist Only allewd to access")
-        }
-    } catch (error) {
-        return sendResponse(res, 500, null, true, `SomeThing Went Worng${error}`)
-    }
-}
-
-
-export async function authenticationDepartment(req, res, next) {
-    try {
-        console.log("req.headersee==>", req.headers.authorization)
-        const bearerToken = req?.headers?.authorization
-        console.log("TOKEN MISSONG==>", req?.headers?.authorization)
-        if (!bearerToken) return sendResponse(res, 403, null, true, "Token not Provide")
-        const token = bearerToken?.split(" ")[1]
-        console.log("4HI BERAER TOKEN==>", bearerToken)
-        const decoded = jwt.verify(token, process.env.AUTH_SECRET)
-        req.user = decoded
-        console.log("hidecodde==>", decoded)
-        if (decoded.role == "department") {
-            next()
-        } else {
-            return sendResponse(res, 403, null, true, "Department Only allewd to access")
-        }
-    } catch (error) {
-        return sendResponse(res, 500, null, true, `SomeThing Went Worng${error}`)
-    }
-}
 
