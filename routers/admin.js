@@ -2,6 +2,8 @@ import express from 'express';
 import Order from '../models/order.js';
 import sendResponse from '../helpers/sendResponse.js';
 import { authenticationAdmin } from '../midelewear/authentication.js';
+import Product from '../models/products.js';
+import { productSchema } from '../validation/product.js';
 
 const routers = express.Router();
 
@@ -15,7 +17,7 @@ routers.get("/all", authenticationAdmin, async (req, res) => {
 });
 
 
-routers.put("/product/:id", authenticationAdmin, async (req, res) => {
+routers.put("/productUpdated/:id", authenticationAdmin, async (req, res) => {
     const { error, value } = productSchema.validate(req.body);
     if (error) return sendResponse(res, 400, null, true, error.message);
 
@@ -29,7 +31,7 @@ routers.put("/product/:id", authenticationAdmin, async (req, res) => {
 
 
 
-routers.delete("/product/:id", authenticationAdmin, async (req, res) => {
+routers.delete("/productDeleted/:id", authenticationAdmin, async (req, res) => {
     try {
         await Product.findByIdAndDelete(req.params.id);
         sendResponse(res, 200, null, false, "Product deleted successfully");
@@ -61,17 +63,17 @@ routers.put("/update-payment/:id", authenticationAdmin, async (req, res) => {
     }
 });
 
-routers.put("/product/:id", authenticationAdmin, async (req, res) => {
-    const { error, value } = productSchema.validate(req.body);
-    if (error) return sendResponse(res, 400, null, true, error.message);
+    // routers.put("/product/:id", authenticationAdmin, async (req, res) => {
+    //     const { error, value } = productSchema.validate(req.body);
+    //     if (error) return sendResponse(res, 400, null, true, error.message);
 
-    try {
-        const updated = await Product.findByIdAndUpdate(req.params.id, value, { new: true });
-        sendResponse(res, 200, updated, false, "Product updated successfully");
-    } catch (err) {
-        sendResponse(res, 500, null, true, "Error: " + err.message);
-    }
-});
+    //     try {
+    //         const updated = await Product.findByIdAndUpdate(req.params.id, value, { new: true });
+    //         sendResponse(res, 200, updated, false, "Product updated successfully");
+    //     } catch (err) {
+    //         sendResponse(res, 500, null, true, "Error: " + err.message);
+    //     }
+    // });
 
 
 export default routers
