@@ -3,6 +3,7 @@ import Order from '../models/order.js';
 import sendResponse from '../helpers/sendResponse.js';
 import { authenticationAdmin, authenticationUser } from '../midelewear/authentication.js';
 import { orderSchema } from '../validation/order.js';
+import Product from '../models/products.js';
 
 const routers = express.Router();
 
@@ -34,6 +35,22 @@ routers.post("/place", authenticationUser, async (req, res) => {
         const savedOrder = await newOrder.save();
         sendResponse(res, 201, savedOrder, false, "Order placed successfully");
     } catch (err) {
+        sendResponse(res, 500, null, true, "Server Error: " + err.message);
+    }
+});
+
+
+routers.get("/myorders", authenticationUser, async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const orders = await Order.find({ user: userId })
+            .populate("items.product")
+            .sort({ createdAt: -1 });
+
+        sendResponse(res, 200, orders, false, "Order fethed successfully");
+    } catch (err) {
+        console.error("Error fetching orders", err);
         sendResponse(res, 500, null, true, "Server Error: " + err.message);
     }
 });

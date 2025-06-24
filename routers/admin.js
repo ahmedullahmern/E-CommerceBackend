@@ -9,7 +9,10 @@ const routers = express.Router();
 
 routers.get("/all", authenticationAdmin, async (req, res) => {
     try {
-        const orders = await Order.find().populate("user").populate("items.product");
+        const orders = await Order.find()
+            .populate("user")
+            .populate("items.product");
+
         sendResponse(res, 200, orders, false, "Orders fetched successfully");
     } catch (err) {
         sendResponse(res, 500, null, true, "Server Error: " + err.message);
@@ -57,23 +60,24 @@ routers.put("/update-payment/:id", authenticationAdmin, async (req, res) => {
     const { paymentStatus } = req.body;
     try {
         const updated = await Order.findByIdAndUpdate(req.params.id, { paymentStatus }, { new: true });
+        if (!updated) return sendResponse(res, 500, null, true, "Not Found");
         sendResponse(res, 200, updated, false, "Payment status updated");
     } catch (err) {
         sendResponse(res, 500, null, true, "Error: " + err.message);
     }
 });
 
-    // routers.put("/product/:id", authenticationAdmin, async (req, res) => {
-    //     const { error, value } = productSchema.validate(req.body);
-    //     if (error) return sendResponse(res, 400, null, true, error.message);
+// routers.put("/product/:id", authenticationAdmin, async (req, res) => {
+//     const { error, value } = productSchema.validate(req.body);
+//     if (error) return sendResponse(res, 400, null, true, error.message);
 
-    //     try {
-    //         const updated = await Product.findByIdAndUpdate(req.params.id, value, { new: true });
-    //         sendResponse(res, 200, updated, false, "Product updated successfully");
-    //     } catch (err) {
-    //         sendResponse(res, 500, null, true, "Error: " + err.message);
-    //     }
-    // });
+//     try {
+//         const updated = await Product.findByIdAndUpdate(req.params.id, value, { new: true });
+//         sendResponse(res, 200, updated, false, "Product updated successfully");
+//     } catch (err) {
+//         sendResponse(res, 500, null, true, "Error: " + err.message);
+//     }
+// });
 
 
 export default routers
