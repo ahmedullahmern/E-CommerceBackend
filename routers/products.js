@@ -5,24 +5,40 @@ import { productSchema } from '../validation/product.js';
 import sendResponse from '../helpers/sendResponse.js';
 import Product from '../models/products.js';
 import multer from "multer";
-import uploadToCloudinary from '../helpers/imageUpload.js';
+// import uploadToCloudinary from '../helpers/imageUpload.js';
 import Order from '../models/order.js';
+import streamUpload from '../helpers/imageUpload.js'
 
 const routers = express.Router()
 
+const storage = multer.memoryStorage(); // Vercel-safe
+const upload = multer({ storage });
 
-const upload = multer({ dest: "uploads/" }); // local tmp upload
-
-routers.post("/upload", upload.single("image"), async (req, res) => {
+routers.post('/upload', upload.single('image'), async (req, res) => {
     try {
-        const localPath = req.file.path;
-        const imageUrl = await uploadToCloudinary(localPath);
+        const buffer = req.file.buffer;
+        const imageUrl = await streamUpload(buffer);
         return res.json({ success: true, url: imageUrl });
     } catch (err) {
         console.log(err);
-        return res.status(500).json({ error: "Image upload failed" });
+        return res.status(500).json({ error: 'Image upload failed' });
     }
 });
+
+
+
+// const upload = multer({ dest: "uploads/" }); // local tmp upload
+
+// routers.post("/upload", upload.single("image"), async (req, res) => {
+//     try {
+//         const localPath = req.file.path;
+//         const imageUrl = await uploadToCloudinary(localPath);
+//         return res.json({ success: true, url: imageUrl });
+//     } catch (err) {
+//         console.log(err);
+//         return res.status(500).json({ error: "Image upload failed" });
+//     }
+// });
 
 
 routers.post("/addproduct", authenticationAdmin, async (req, res) => {
