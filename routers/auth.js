@@ -7,6 +7,11 @@ import express from 'express';
 import nodemailer from 'nodemailer';
 import { loginSchema, signupSchema } from '../validation/authValidation.js';
 import { authenticationUser } from '../midelewear/authentication.js';
+import multer from 'multer';
+import avatarUpload from '../helpers/avtarUpload.js';
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 const router = express.Router()
 
@@ -34,14 +39,55 @@ router.post("/login", async (req, res) => {
     sendResponse(res, 200, { user, token }, false, "User Login successfully")
 })
 
-router.put("/profile/update", authenticationUser, async (req, res) => {
+router.get("/profile", authenticationUser, async (req, res) => {
     try {
-        const updated = await User.findByIdAndUpdate(req.user._id, req.body, { new: true });
-        sendResponse(res, 200, updated, false, "Profile updated successfully");
+        const user = await User.findById(req.user._id).select("-password");
+        if (!user) return sendResponse(res, 404, null, true, "User not found");
+        sendResponse(res, 200, user, false, "User profile fetched");
+    } catch (err) {
+        sendResponse(res, 500, null, true, err.message);
+    }
+});
+
+router.delete("/profileimgdelete", authenticationUser, async (req, res) => {
+    try {
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id,
+            { $unset: { avatar: "" } },
+            { new: true }
+        );
+
+        sendResponse(res, 200, updatedUser, false, "Avatar deleted successfully");
     } catch (err) {
         sendResponse(res, 500, null, true, "Error: " + err.message);
     }
 });
+
+
+router.put('/profile/update', authenticationUser, upload.single('avatar'), async (req, res) => {
+
+    console.log("req.body:", req.body);
+    console.log("req.file:", req.file);
+
+    try {
+        const updateData = {
+            name: req.body.name,
+            email: req.body.email,
+        };
+
+        if (req.file) {
+            const imageUrl = await avatarUpload(req.file.buffer);
+            updateData.avatar = imageUrl;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, { new: true });
+        sendResponse(res, 200, updatedUser, false, "User profile Updated");
+    } catch (err) {
+        console.log(err);
+        sendResponse(res, 500, null, true, err + "Somethig Went Worng");
+    }
+});
+
 
 
 router.post("/forgot-password", async (req, res) => {
@@ -98,6 +144,7 @@ router.post("/reset-password/:token", async (req, res) => {
         sendResponse(res, 400, null, true, "Invalid or expired token");
     }
 });
+
 
 
 export default router
