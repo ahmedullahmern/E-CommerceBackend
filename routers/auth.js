@@ -9,6 +9,7 @@ import { loginSchema, signupSchema } from '../validation/authValidation.js';
 import { authenticationUser } from '../midelewear/authentication.js';
 import multer from 'multer';
 import avatarUpload from '../helpers/avtarUpload.js';
+import cloudinary from '../helpers/cloudinary.js';
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -64,30 +65,91 @@ router.delete("/profileimgdelete", authenticationUser, async (req, res) => {
 });
 
 
+// router.put('/profile/update', authenticationUser, upload.single('avatar'), async (req, res) => {
+
+//     console.log("req.body:", req.body);
+//     console.log("req.file:", req.file);
+
+//     try {
+//         const updateData = {
+//             name: req.body.name,
+//             email: req.body.email,
+//         };
+
+//         if (req.file) {
+//             const imageUrl = await avatarUpload(req.file.buffer);
+//             updateData.avatar = imageUrl;
+//         }
+
+//         const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, { new: true });
+//         sendResponse(res, 200, updatedUser, false, "User profile Updated");
+//     } catch (err) {
+//         console.log(err);
+//         sendResponse(res, 500, null, true, err + "Somethig Went Worng");
+//     }
+// });
+
 router.put('/profile/update', authenticationUser, upload.single('avatar'), async (req, res) => {
-
-    console.log("req.body:", req.body);
-    console.log("req.file:", req.file);
-
     try {
-        const updateData = {
-            name: req.body.name,
-            email: req.body.email,
-        };
+        const user = await User.findById(req.user._id);
 
-        if (req.file) {
-            const imageUrl = await avatarUpload(req.file.buffer);
-            updateData.avatar = imageUrl;
+        if (!user) return sendResponse(res, 404, null, true, "User not found");
+
+        // Step 1: Email already kisi aur user ka to nahi?
+        if (req.body.email && req.body.email !== user.email) {
+            const emailExists = await User.findOne({ email: req.body.email });
+            if (emailExists) {
+                return sendResponse(res, 400, null, true, "Email already in use");
+            }
         }
 
+        const updateData = {
+            name: req.body.name || user.name,
+            email: req.body.email || user.email,
+        };
+
+        // Step 2: Agar image upload hui hai
+        if (req.file) {
+            console.log("Deleting image with public_id:", user.avatarPublicId);
+            // Purani image delete karo Cloudinary se
+            if (req.file && user.avatarPublicId) {
+                await cloudinary.uploader.destroy(user.avatarPublicId);
+            }
+
+            // Nayi image upload karo
+            // const uploadResult = await cloudinary.uploader.upload_stream(
+            //     { resource_type: "image", folder: "avatars" },
+            //     (error, result) => {
+            //         if (error) throw new Error("Upload failed");
+            //         updateData.avatar = result.secure_url;
+            //         updateData.avatarPublicId = result.public_id;
+            //     }
+            // );
+
+            // Yeh zaroori hai await karne ke liye
+            await new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream((error, result) => {
+                    if (error) return reject(error);
+                    console.log("Image uploaded to Cloudinary:");
+                    console.log("Secure URL:", result.secure_url);
+                    console.log("Public ID:", result.public_id);
+                    updateData.avatar = result.secure_url;
+                    updateData.avatarPublicId = result.public_id;
+                    resolve(result);
+                });
+                stream.end(req.file.buffer);
+            });
+        }
+
+        // Step 3: User update karo
         const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, { new: true });
-        sendResponse(res, 200, updatedUser, false, "User profile Updated");
+
+        sendResponse(res, 200, updatedUser, false, "User profile updated successfully");
     } catch (err) {
-        console.log(err);
-        sendResponse(res, 500, null, true, err + "Somethig Went Worng");
+        console.error(err);
+        sendResponse(res, 500, null, true, "Error: " + err.message);
     }
 });
-
 
 
 router.post("/forgot-password", async (req, res) => {

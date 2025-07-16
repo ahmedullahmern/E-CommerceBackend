@@ -12,7 +12,10 @@ const userSchema = new Schema({
   },
   avatar: {
     type: String
-  }
+  },
+
+  avatarPublicId: String,
+
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);
